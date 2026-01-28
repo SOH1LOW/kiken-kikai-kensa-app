@@ -66,10 +66,15 @@ export default function HomeScreen() {
     router.push("/review");
   };
 
+  const handleCategoryMode = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/category-select");
+  };
+
   return (
     <ScreenContainer className="p-6">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1 gap-6 justify-center">
+        <View className="flex-1 gap-5 justify-center">
           {/* タイトルセクション */}
           <View className="items-center gap-3">
             <Text className="text-4xl font-bold text-foreground text-center">
@@ -117,6 +122,22 @@ export default function HomeScreen() {
               {incorrectCount === 0
                 ? "間違えた問題がありません"
                 : `${incorrectCount}問の間違えた問題を復習`}
+            </Text>
+          </View>
+
+          {/* カテゴリ別学習モードボタン */}
+          <View className="items-center gap-3">
+            <TouchableOpacity
+              onPress={handleCategoryMode}
+              className="w-full max-w-xs bg-primary py-5 rounded-2xl shadow-lg active:opacity-80"
+              activeOpacity={0.8}
+            >
+              <Text className="text-white text-xl font-bold text-center">
+                カテゴリ別学習
+              </Text>
+            </TouchableOpacity>
+            <Text className="text-sm text-muted text-center">
+              特定分野に絞って学習
             </Text>
           </View>
 
