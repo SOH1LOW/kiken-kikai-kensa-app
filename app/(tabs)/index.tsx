@@ -99,6 +99,11 @@ export default function HomeScreen() {
     router.push("/profile");
   };
 
+  const handleLeaderboard = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/leaderboard");
+  };
+
   return (
     <ScreenContainer className="p-6">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -234,6 +239,21 @@ export default function HomeScreen() {
               </Text>
             </View>
           )}
+
+          {/* ランキングボタン */}
+          <View className="items-center gap-2">
+            <TouchableOpacity
+              onPress={handleLeaderboard}
+              className="w-full max-w-sm bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4 rounded-full active:opacity-80"
+            >
+              <Text className="text-white font-bold text-center text-lg">
+                🏆 ランキング
+              </Text>
+            </TouchableOpacity>
+            <Text className="text-sm text-muted text-center">
+              伝説の技能者と竞う
+            </Text>
+          </View>
 
           {/* 統計情報カード */}
           <View className="w-full max-w-sm self-center bg-surface rounded-2xl p-6 shadow-sm border border-border">
