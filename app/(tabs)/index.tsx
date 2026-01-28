@@ -1,10 +1,11 @@
-import { Text, View, TouchableOpacity, ScrollView } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, Pressable } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useEffect, useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { getIncorrectQuestionCount } from "@/lib/incorrect-questions";
+import { getUserProfile, type UserProfile } from "@/lib/gamification";
 
 interface TestHistory {
   totalTests: number;
@@ -20,15 +21,18 @@ export default function HomeScreen() {
     highestScore: 0,
   });
   const [incorrectCount, setIncorrectCount] = useState(0);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     loadHistory();
     loadIncorrectCount();
+    loadProfile();
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       loadIncorrectCount();
+      loadProfile();
     }, [])
   );
 
@@ -48,7 +52,16 @@ export default function HomeScreen() {
       const count = await getIncorrectQuestionCount();
       setIncorrectCount(count);
     } catch (error) {
-      console.error("間違い問題数の読み込みに失敗しました:", error);
+      console.error("復習問題の読み込みに失敗しました:", error);
+    }
+  };
+
+  const loadProfile = async () => {
+    try {
+      const data = await getUserProfile();
+      setProfile(data);
+    } catch (error) {
+      console.error("プロフィールの読み込みに失敗しました:", error);
     }
   };
 
@@ -79,6 +92,11 @@ export default function HomeScreen() {
   const handleAnalytics = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push("/analytics");
+  };
+
+  const handleProfile = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/profile");
   };
 
   return (
@@ -182,6 +200,40 @@ export default function HomeScreen() {
               分野別正答率を分析
             </Text>
           </View>
+
+          {/* プロフィールカード */}
+          {profile && (
+            <View className="w-full max-w-sm self-center bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-2xl p-5 shadow-sm border border-purple-300/30 mb-5">
+              <View className="flex-row items-center justify-between mb-3">
+                <View className="flex-row items-center gap-3">
+                  <Text className="text-4xl">{profile.titles.find(t => t.isActive)?.icon || '🌱'}</Text>
+                  <View>
+                    <Text className="text-base font-bold text-foreground">
+                      {profile.titles.find(t => t.isActive)?.name || '見習い'}
+                    </Text>
+                    <Text className="text-xs text-muted">Lv. {profile.level}</Text>
+                  </View>
+                </View>
+                <Pressable
+                  onPress={handleProfile}
+                  className="px-3 py-2 bg-purple-500 rounded-lg"
+                >
+                  <Text className="text-white text-xs font-bold">詳細</Text>
+                </Pressable>
+              </View>
+              <View className="h-2 bg-border rounded-full overflow-hidden mb-2">
+                <View
+                  className="h-full bg-purple-500"
+                  style={{
+                    width: `${Math.round((profile.experience % 100) / 100 * 100)}%`,
+                  }}
+                />
+              </View>
+              <Text className="text-xs text-muted text-center">
+                {profile.badges.filter(b => b.isUnlocked).length}個のバッジ • {profile.totalTests}回のテスト
+              </Text>
+            </View>
+          )}
 
           {/* 統計情報カード */}
           <View className="w-full max-w-sm self-center bg-surface rounded-2xl p-6 shadow-sm border border-border">
