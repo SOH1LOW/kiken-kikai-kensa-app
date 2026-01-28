@@ -76,6 +76,11 @@ export default function HomeScreen() {
     router.push("/mock-exam");
   };
 
+  const handleAnalytics = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/analytics");
+  };
+
   return (
     <ScreenContainer className="p-6">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -159,6 +164,22 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <Text className="text-sm text-muted text-center">
               特定分野に絞って学習
+            </Text>
+          </View>
+
+          {/* 弱点分析ボタン */}
+          <View className="items-center gap-3">
+            <TouchableOpacity
+              onPress={handleAnalytics}
+              className="w-full max-w-xs bg-purple-500 py-5 rounded-2xl shadow-lg active:opacity-80"
+              activeOpacity={0.8}
+            >
+              <Text className="text-white text-xl font-bold text-center">
+                弱点分析
+              </Text>
+            </TouchableOpacity>
+            <Text className="text-sm text-muted text-center">
+              分野別正答率を分析
             </Text>
           </View>
 
