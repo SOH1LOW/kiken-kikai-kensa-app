@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { type Question } from "@/data/questions";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
+import { recordIncorrectQuestion } from "@/lib/incorrect-questions";
 
 interface IncorrectQuestion {
   question: Question;
@@ -37,6 +38,7 @@ export default function ResultScreen() {
           correctCount++;
         } else {
           incorrect.push({ question, userAnswer });
+          recordIncorrectQuestion(question.id, userAnswer);
         }
       });
 

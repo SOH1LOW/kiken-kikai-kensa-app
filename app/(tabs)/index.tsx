@@ -1,9 +1,10 @@
 import { Text, View, TouchableOpacity, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
+import { getIncorrectQuestionCount } from "@/lib/incorrect-questions";
 
 interface TestHistory {
   totalTests: number;
@@ -18,10 +19,18 @@ export default function HomeScreen() {
     averageScore: 0,
     highestScore: 0,
   });
+  const [incorrectCount, setIncorrectCount] = useState(0);
 
   useEffect(() => {
     loadHistory();
+    loadIncorrectCount();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadIncorrectCount();
+    }, [])
+  );
 
   const loadHistory = async () => {
     try {
@@ -34,15 +43,33 @@ export default function HomeScreen() {
     }
   };
 
+  const loadIncorrectCount = async () => {
+    try {
+      const count = await getIncorrectQuestionCount();
+      setIncorrectCount(count);
+    } catch (error) {
+      console.error("間違い問題数の読み込みに失敗しました:", error);
+    }
+  };
+
   const handleStartTest = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push("/quiz");
   };
 
+  const handleStartReview = () => {
+    if (incorrectCount === 0) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/review");
+  };
+
   return (
     <ScreenContainer className="p-6">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1 gap-8 justify-center">
+        <View className="flex-1 gap-6 justify-center">
           {/* タイトルセクション */}
           <View className="items-center gap-3">
             <Text className="text-4xl font-bold text-foreground text-center">
@@ -57,18 +84,39 @@ export default function HomeScreen() {
           </View>
 
           {/* テスト開始ボタン */}
-          <View className="items-center my-8">
+          <View className="items-center gap-3">
             <TouchableOpacity
               onPress={handleStartTest}
-              className="bg-primary px-12 py-5 rounded-2xl shadow-lg active:opacity-80"
+              className="w-full max-w-xs bg-primary py-5 rounded-2xl shadow-lg active:opacity-80"
               activeOpacity={0.8}
             >
-              <Text className="text-white text-xl font-bold">
+              <Text className="text-white text-xl font-bold text-center">
                 テスト開始
               </Text>
             </TouchableOpacity>
-            <Text className="text-sm text-muted mt-3">
+            <Text className="text-sm text-muted text-center">
               30問の◯×問題にチャレンジ
+            </Text>
+          </View>
+
+          {/* 復習モードボタン */}
+          <View className="items-center gap-3">
+            <TouchableOpacity
+              onPress={handleStartReview}
+              disabled={incorrectCount === 0}
+              className={`w-full max-w-xs py-5 rounded-2xl shadow-lg active:opacity-80 ${
+                incorrectCount === 0 ? "bg-border opacity-50" : "bg-warning"
+              }`}
+              activeOpacity={incorrectCount === 0 ? 1 : 0.8}
+            >
+              <Text className="text-white text-xl font-bold text-center">
+                復習モード
+              </Text>
+            </TouchableOpacity>
+            <Text className="text-sm text-muted text-center">
+              {incorrectCount === 0
+                ? "間違えた問題がありません"
+                : `${incorrectCount}問の間違えた問題を復習`}
             </Text>
           </View>
 
@@ -77,7 +125,7 @@ export default function HomeScreen() {
             <Text className="text-lg font-semibold text-foreground mb-4">
               学習記録
             </Text>
-            
+
             <View className="gap-3">
               <View className="flex-row justify-between items-center">
                 <Text className="text-sm text-muted">総テスト回数</Text>
