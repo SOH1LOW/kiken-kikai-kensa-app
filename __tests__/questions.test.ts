@@ -40,8 +40,8 @@ describe("Questions Data", () => {
     expect(falseAnswers.length).toBeGreaterThan(0);
   });
 
-  it("should return 30 random questions by default", () => {
-    const randomQuestions = getRandomQuestions();
+  it("should return 30 random questions when requested", () => {
+    const randomQuestions = getRandomQuestions(30);
     expect(randomQuestions.length).toBe(30);
   });
 
