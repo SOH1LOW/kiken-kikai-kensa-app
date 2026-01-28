@@ -71,6 +71,11 @@ export default function HomeScreen() {
     router.push("/category-select");
   };
 
+  const handleMockExam = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/mock-exam");
+  };
+
   return (
     <ScreenContainer className="p-6">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -122,6 +127,22 @@ export default function HomeScreen() {
               {incorrectCount === 0
                 ? "間違えた問題がありません"
                 : `${incorrectCount}問の間違えた問題を復習`}
+            </Text>
+          </View>
+
+          {/* 模擬試験モードボタン */}
+          <View className="items-center gap-3">
+            <TouchableOpacity
+              onPress={handleMockExam}
+              className="w-full max-w-xs bg-success py-5 rounded-2xl shadow-lg active:opacity-80"
+              activeOpacity={0.8}
+            >
+              <Text className="text-white text-xl font-bold text-center">
+                模擬試験
+              </Text>
+            </TouchableOpacity>
+            <Text className="text-sm text-muted text-center">
+              60分で30問に挑戦
             </Text>
           </View>
 
