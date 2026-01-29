@@ -104,6 +104,11 @@ export default function HomeScreen() {
     router.push("/leaderboard");
   };
 
+  const handleSettings = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/settings");
+  };
+
   return (
     <ScreenContainer className="p-6">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -289,11 +294,26 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* 説明テキスト */}
+          {/* 設定ボタン */}
+          <View className="items-center gap-2">
+            <TouchableOpacity
+              onPress={handleSettings}
+              className="w-full max-w-sm bg-surface px-6 py-4 rounded-full border border-border active:opacity-80"
+            >
+              <Text className="text-foreground font-bold text-center text-lg">
+                ⚙️ 設定
+              </Text>
+            </TouchableOpacity>
+            <Text className="text-sm text-muted text-center">
+              アカウント設定
+            </Text>
+          </View>
+
+          {/* 設明テキスト */}
           <View className="w-full max-w-sm self-center">
             <Text className="text-sm text-muted text-center leading-relaxed">
               このアプリは技能検定機械検査3級の学習をサポートします。
-              測定機器、硬さ試験、寸法測定など、幅広い分野から出題されます。
+              測定機器、硅さ試験、寸法測定など、幅広い分野から出題されます。
             </Text>
           </View>
         </View>
