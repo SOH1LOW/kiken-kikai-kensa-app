@@ -96,6 +96,13 @@ export default function LeaderboardScreen() {
     router.push("/friends" as any);
   };
 
+  const handleViewUserProfile = (userId: string) => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    router.push(`/user-profile?userId=${userId}` as any);
+  };
+
   if (loading) {
     return (
       <ScreenContainer className="p-4 justify-center">
@@ -238,18 +245,20 @@ export default function LeaderboardScreen() {
                   />
                 </View>
 
-                {/* Follow button */}
+                {/* Action buttons */}
                 {!isCurrentUser && (
-                  <View className="mt-3">
+                  <View className="mt-3 flex-row gap-2">
+                    <Pressable
+                      onPress={() => handleViewUserProfile(entry.userId)}
+                      className="flex-1 px-3 py-2 rounded bg-surface border border-border"
+                    >
+                      <Text className="text-center font-semibold text-sm text-foreground">
+                        プロフィール
+                      </Text>
+                    </Pressable>
                     <Pressable
                       onPress={() => handleFollowUser(entry)}
-                      style={({ pressed }) => [
-                        {
-                          opacity: pressed ? 0.8 : 1,
-                          transform: [{ scale: pressed ? 0.97 : 1 }],
-                        },
-                      ]}
-                      className={isFriend ? "px-3 py-2 rounded bg-primary" : "px-3 py-2 rounded bg-surface border border-border"}
+                      className={isFriend ? "flex-1 px-3 py-2 rounded bg-primary" : "flex-1 px-3 py-2 rounded bg-surface border border-border"}
                     >
                       <Text className={isFriend ? "text-center font-semibold text-sm text-white" : "text-center font-semibold text-sm text-foreground"}>
                         {isFriend ? "フォロー中" : "フォロー"}
