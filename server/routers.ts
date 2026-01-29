@@ -1,5 +1,7 @@
 import { COOKIE_NAME } from "../shared/const.js";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { classifyQuestionWithLLM, classifyQuestionsWithLLMBatch } from "./category-classifier";
+import { z } from "zod";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 
@@ -17,12 +19,69 @@ export const appRouter = router({
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  // カテゴリ分類機能
+  categoryClassifier: router({
+    classifyQuestion: publicProcedure
+      .input(z.object({
+        questionText: z.string().min(1, "問題文は空にできません"),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const result = await classifyQuestionWithLLM(input.questionText);
+          return {
+            success: true,
+            data: result,
+          };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "分類に失敗しました",
+          };
+        }
+      }),
+
+    classifyQuestions: publicProcedure
+      .input(z.object({
+        questions: z.array(z.string().min(1)).min(1, "最低1問必要です"),
+        batchSize: z.number().int().positive().default(5),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const results = await classifyQuestionsWithLLMBatch(
+            input.questions,
+            input.batchSize
+          );
+          
+          // 統計情報を計算
+          const categoryCount = new Map<string, number>();
+          let totalConfidence = 0;
+          
+          results.forEach(r => {
+            categoryCount.set(r.category, (categoryCount.get(r.category) || 0) + 1);
+            totalConfidence += r.confidence;
+          });
+          
+          const averageConfidence = results.length > 0 ? totalConfidence / results.length : 0;
+          
+          return {
+            success: true,
+            data: {
+              results,
+              statistics: {
+                totalProcessed: results.length,
+                averageConfidence,
+                categoryDistribution: Object.fromEntries(categoryCount),
+              },
+            },
+          };
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "分類に失敗しました",
+          };
+        }
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
