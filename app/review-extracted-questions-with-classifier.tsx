@@ -17,6 +17,7 @@ import { ExtractedQuestion, ocrExtraction } from '@/lib/ocr-extraction';
 import { pastQuestionsManager, PastQuestionSet } from '@/lib/past-questions';
 import { AVAILABLE_CATEGORIES, type Category } from '@/lib/category-classifier';
 import { trpc } from '@/lib/trpc';
+import { parseAnswerKey, validateAnswerKey, formatAnswerKeyForPreview, getAnswerKeyStatistics } from '@/lib/answer-key-parser';
 
 // ID生成関数
 const generateId = () => {
@@ -47,6 +48,11 @@ export default function ReviewExtractedQuestionsWithClassifierScreen() {
 
   // tRPC mutation
   const classifyMutation = trpc.categoryClassifier.classifyQuestions.useMutation();
+
+  // 答えキー入力用の状態
+  const [answerKeyInput, setAnswerKeyInput] = useState('');
+  const [showAnswerKeyModal, setShowAnswerKeyModal] = useState(false);
+  const [answerKeyValidation, setAnswerKeyValidation] = useState<{ isValid: boolean; message: string } | null>(null);
 
   useEffect(() => {
     // パラメータから抽出された問題を取得
@@ -104,6 +110,39 @@ export default function ReviewExtractedQuestionsWithClassifierScreen() {
     setShowEditModal(false);
     setEditingQuestion(null);
     setEditingIndex(null);
+  };
+
+  // 答えキーを適用
+  const handleApplyAnswerKey = () => {
+    if (!answerKeyInput.trim()) {
+      Alert.alert('エラー', '答えキーを入力してください');
+      return;
+    }
+
+    const parsed = parseAnswerKey(answerKeyInput);
+    const validation = validateAnswerKey(parsed, questions.length);
+
+    setAnswerKeyValidation({
+      isValid: validation.isValid,
+      message: validation.message,
+    });
+
+    if (!validation.isValid) {
+      return;
+    }
+
+    // 答えを適用
+    const updatedQuestions = questions.map((q, index) => ({
+      ...q,
+      answer: parsed.answers[index] ?? q.answer,
+    }));
+
+    setQuestions(updatedQuestions);
+    setAnswerKeyInput('');
+    setShowAnswerKeyModal(false);
+    setAnswerKeyValidation(null);
+
+    Alert.alert('成功', `${parsed.count}問の答えを適用しました`);
   };
 
   // カテゴリ分類を実行
@@ -276,6 +315,19 @@ export default function ReviewExtractedQuestionsWithClassifierScreen() {
             </Text>
           </View>
 
+          {/* 答えキー入力ボタン */}
+          <Pressable
+            onPress={() => setShowAnswerKeyModal(true)}
+            disabled={questions.length === 0}
+            className={`px-4 py-3 rounded-lg ${
+              questions.length === 0 ? 'bg-muted opacity-50' : 'bg-green-600'
+            }`}
+          >
+            <Text className="text-center font-semibold text-white">
+              📝 答えキーを入力（一括適用）
+            </Text>
+          </Pressable>
+
           {/* カテゴリ分類ボタン */}
           <Pressable
             onPress={handleClassifyQuestions}
@@ -396,6 +448,86 @@ export default function ReviewExtractedQuestionsWithClassifierScreen() {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* 答えキー入力モーダル */}
+      <Modal visible={showAnswerKeyModal} animationType="slide" transparent>
+        <View className="flex-1 bg-black/50">
+          <View className="mt-auto rounded-t-2xl bg-background p-4">
+            <Text className="mb-4 text-lg font-bold text-foreground">答えキーを入力</Text>
+
+            <View className="mb-4 rounded-lg bg-surface p-3">
+              <Text className="mb-2 text-xs font-semibold text-muted">
+                サポートされる形式:
+              </Text>
+              <Text className="text-xs text-muted">
+                • ◯×◯×... (円記号)\n
+                • 正誤正誤... (日本語)\n
+                • TFTF... (英字)\n
+                • スペースや改行は自動削除
+              </Text>
+            </View>
+
+            <View className="mb-4">
+              <Text className="mb-1 text-sm font-semibold text-foreground">
+                答えキー（{questions.length}問分）
+              </Text>
+              <TextInput
+                value={answerKeyInput}
+                onChangeText={setAnswerKeyInput}
+                placeholder="例: ◯◯×◯×◯..."
+                multiline
+                numberOfLines={3}
+                className="rounded border border-border px-3 py-2 text-foreground"
+                placeholderTextColor="#999"
+              />
+            </View>
+
+            {answerKeyValidation && (
+              <View
+                className={`mb-4 rounded-lg p-3 ${
+                  answerKeyValidation.isValid ? 'bg-green-100' : 'bg-red-100'
+                }`}
+              >
+                <Text
+                  className={`text-sm font-semibold ${
+                    answerKeyValidation.isValid ? 'text-green-800' : 'text-red-800'
+                  }`}
+                >
+                  {answerKeyValidation.message}
+                </Text>
+              </View>
+            )}
+
+            {answerKeyInput.trim() && (
+              <View className="mb-4 rounded-lg bg-surface p-3">
+                <Text className="mb-2 text-xs font-semibold text-muted">プレビュー:</Text>
+                <Text className="font-mono text-sm text-foreground">
+                  {formatAnswerKeyForPreview(parseAnswerKey(answerKeyInput).answers, 10)}
+                </Text>
+              </View>
+            )}
+
+            <View className="flex-row gap-2">
+              <Pressable
+                onPress={() => {
+                  setShowAnswerKeyModal(false);
+                  setAnswerKeyInput('');
+                  setAnswerKeyValidation(null);
+                }}
+                className="flex-1 rounded-lg border border-border bg-surface py-3"
+              >
+                <Text className="text-center font-semibold text-foreground">キャンセル</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleApplyAnswerKey}
+                className="flex-1 rounded-lg bg-green-600 py-3"
+              >
+                <Text className="text-center font-semibold text-white">適用</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* 編集モーダル */}
       <Modal visible={showEditModal} animationType="slide" transparent>
