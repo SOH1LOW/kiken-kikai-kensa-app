@@ -5,7 +5,6 @@ import {
   View,
   Pressable,
   Platform,
-  FlatList,
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -20,6 +19,7 @@ import {
   type RankingEntry,
   type UserRankingData,
 } from "../lib/ranking";
+import { addFriend, isFriend, removeFriend } from "../lib/friends";
 import { useColors } from "@/hooks/use-colors";
 
 export default function LeaderboardScreen() {
@@ -28,6 +28,7 @@ export default function LeaderboardScreen() {
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [currentUser, setCurrentUser] = useState<UserRankingData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadRankings();
@@ -37,8 +38,19 @@ export default function LeaderboardScreen() {
     setLoading(true);
     const topUsers = await getTopUsers(10);
     const user = await getUserRankingData();
+    
+    // Load friend status for each user
+    const friends = new Set<string>();
+    for (const entry of topUsers) {
+      const isFriendUser = await isFriend(entry.userId);
+      if (isFriendUser) {
+        friends.add(entry.userId);
+      }
+    }
+    
     setRankings(topUsers);
     setCurrentUser(user);
+    setFriendIds(friends);
     setLoading(false);
   };
 
@@ -47,6 +59,41 @@ export default function LeaderboardScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     loadRankings();
+  };
+
+  const handleFollowUser = async (user: RankingEntry) => {
+    try {
+      if (friendIds.has(user.userId)) {
+        await removeFriend(user.userId);
+        setFriendIds((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(user.userId);
+          return newSet;
+        });
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Success
+          );
+        }
+      } else {
+        await addFriend(user);
+        setFriendIds((prev) => new Set([...prev, user.userId]));
+        if (Platform.OS !== "web") {
+          Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Success
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Failed to follow user:", error);
+    }
+  };
+
+  const handleViewFriends = () => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    router.push("/friends" as any);
   };
 
   if (loading) {
@@ -119,10 +166,11 @@ export default function LeaderboardScreen() {
             トップ10
           </Text>
 
-          {rankings.map((entry, index) => {
+          {rankings.map((entry) => {
             const tier = getRankingTier(calculateRankingScore(entry));
             const tierColor = getTierColor(tier);
             const isCurrentUser = entry.userId === currentUser?.userId;
+            const isFriend = friendIds.has(entry.userId);
 
             return (
               <View
@@ -189,6 +237,26 @@ export default function LeaderboardScreen() {
                     }}
                   />
                 </View>
+
+                {/* Follow button */}
+                {!isCurrentUser && (
+                  <View className="mt-3">
+                    <Pressable
+                      onPress={() => handleFollowUser(entry)}
+                      style={({ pressed }) => [
+                        {
+                          opacity: pressed ? 0.8 : 1,
+                          transform: [{ scale: pressed ? 0.97 : 1 }],
+                        },
+                      ]}
+                      className={isFriend ? "px-3 py-2 rounded bg-primary" : "px-3 py-2 rounded bg-surface border border-border"}
+                    >
+                      <Text className={isFriend ? "text-center font-semibold text-sm text-white" : "text-center font-semibold text-sm text-foreground"}>
+                        {isFriend ? "フォロー中" : "フォロー"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
               </View>
             );
           })}
@@ -229,6 +297,20 @@ export default function LeaderboardScreen() {
 
         {/* Action buttons */}
         <View className="gap-3">
+          <Pressable
+            onPress={handleViewFriends}
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.8 : 1,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+              },
+            ]}
+            className="p-4 rounded-lg bg-success"
+          >
+            <Text className="text-center text-white font-bold text-lg">
+              👥 フレンド一覧
+            </Text>
+          </Pressable>
           <Pressable
             onPress={() => router.back()}
             style={({ pressed }) => [
