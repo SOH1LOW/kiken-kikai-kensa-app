@@ -146,15 +146,26 @@ export default function PastQuestionsManager() {
             </Text>
           </View>
 
-          {/* Add Button */}
-          <Pressable
-            onPress={() => setShowForm(!showForm)}
-            className="px-4 py-3 rounded-lg bg-primary"
-          >
-            <Text className="text-center font-semibold text-white">
-              {showForm ? 'キャンセル' : '新しいセットを追加'}
-            </Text>
-          </Pressable>
+          {/* Add Buttons */}
+          <View className="gap-2">
+            <Pressable
+              onPress={() => setShowForm(!showForm)}
+              className="px-4 py-3 rounded-lg bg-primary"
+            >
+              <Text className="text-center font-semibold text-white">
+                {showForm ? 'キャンセル' : '+ 新しいセットを追加'}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.push('/extract-from-file')}
+              className="px-4 py-3 rounded-lg bg-blue-500"
+            >
+              <Text className="text-center font-semibold text-white">
+                📄 ファイルから問題を抽出
+              </Text>
+            </Pressable>
+          </View>
 
           {/* Form */}
           {showForm && (
