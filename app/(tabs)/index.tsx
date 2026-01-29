@@ -109,6 +109,11 @@ export default function HomeScreen() {
     router.push("/settings");
   };
 
+  const handlePastQuestions = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push("/past-questions-manager");
+  };
+
   return (
     <ScreenContainer className="p-6">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -257,6 +262,21 @@ export default function HomeScreen() {
             </TouchableOpacity>
             <Text className="text-sm text-muted text-center">
               伝説の技能者と竞う
+            </Text>
+          </View>
+
+          {/* 過去問題管理ボタン */}
+          <View className="items-center gap-2">
+            <TouchableOpacity
+              onPress={handlePastQuestions}
+              className="w-full max-w-sm bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4 rounded-full active:opacity-80"
+            >
+              <Text className="text-white font-bold text-center text-lg">
+                📚 過去問題
+              </Text>
+            </TouchableOpacity>
+            <Text className="text-sm text-muted text-center">
+              過去問題を追加・管理
             </Text>
           </View>
 
