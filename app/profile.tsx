@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   ScrollView,
   Text,
@@ -253,6 +253,26 @@ export default function ProfileScreen() {
 
         {/* Action buttons */}
         <View className="gap-3">
+          <Pressable
+            onPress={() => {
+              if (Platform.OS !== "web") {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+              router.push("/badge-collection");
+            }}
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.8 : 1,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+              },
+            ]}
+            className="p-4 rounded-lg bg-purple-500"
+          >
+            <Text className="text-center text-white font-bold text-lg">
+              📖 バッジ図鑑
+            </Text>
+          </Pressable>
+
           <Pressable
             onPress={() => router.back()}
             style={({ pressed }) => [
