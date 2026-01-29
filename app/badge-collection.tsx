@@ -13,12 +13,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { getUserProfile, type UserProfile } from "@/lib/gamification";
+import { getRecommendedBadges, type RecommendedBadge } from "@/lib/badge-recommendation";
 
 export default function BadgeCollectionScreen() {
   const router = useRouter();
   const colors = useColors();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recommendedBadges, setRecommendedBadges] = useState<RecommendedBadge[]>([]);
 
   useEffect(() => {
     loadProfile();
@@ -28,6 +30,8 @@ export default function BadgeCollectionScreen() {
     try {
       const profile = await getUserProfile();
       setProfile(profile);
+      const recommended = getRecommendedBadges(profile);
+      setRecommendedBadges(recommended);
       setLoading(false);
     } catch (error) {
       console.error("Failed to load profile:", error);
@@ -75,12 +79,10 @@ export default function BadgeCollectionScreen() {
       }`}
     >
       <View className="flex-row items-start gap-4">
-        {/* Badge Icon */}
         <View className="items-center justify-center w-16 h-16 rounded-lg bg-background">
           <Text className="text-4xl">{badge.icon}</Text>
         </View>
 
-        {/* Badge Info */}
         <View className="flex-1">
           <View className="flex-row items-center gap-2 mb-1">
             <Text className="text-lg font-bold text-foreground flex-1">
@@ -112,10 +114,53 @@ export default function BadgeCollectionScreen() {
     </View>
   );
 
+  const renderRecommendedBadge = (rec: RecommendedBadge) => (
+    <View
+      key={rec.badge.id}
+      className="mb-4 rounded-lg p-4 border border-primary bg-primary/5"
+    >
+      <View className="flex-row items-start gap-4">
+        <View className="items-center justify-center w-16 h-16 rounded-lg bg-background">
+          <Text className="text-4xl">{rec.badge.icon}</Text>
+        </View>
+
+        <View className="flex-1">
+          <View className="flex-row items-center gap-2 mb-1">
+            <Text className="text-lg font-bold text-foreground flex-1">
+              {rec.badge.name}
+            </Text>
+            <View className="px-2 py-1 bg-primary rounded-full">
+              <Text className="text-xs text-white font-bold">
+                {rec.progress.toFixed(0)}%
+              </Text>
+            </View>
+          </View>
+
+          <Text className="text-sm text-muted mb-2">{rec.reason}</Text>
+
+          <View className="w-full h-2 bg-border rounded-full overflow-hidden mb-2">
+            <View
+              className="h-full bg-primary"
+              style={{
+                width: `${rec.progress}%`,
+              }}
+            />
+          </View>
+
+          <View className="bg-background rounded p-2">
+            <Text className="text-xs text-muted font-semibold mb-1">
+              進捗：
+            </Text>
+            <Text className="text-xs text-foreground">{rec.nextMilestone}</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+
   return (
     <ScreenContainer className="p-4 bg-background">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        {/* Header */}
         <View className="mb-6">
           <Text className="text-2xl font-bold text-foreground">
             バッジ図鑑
@@ -125,7 +170,6 @@ export default function BadgeCollectionScreen() {
           </Text>
         </View>
 
-        {/* Stats */}
         <View className="mb-6 bg-surface rounded-lg p-4 border border-border">
           <View className="flex-row justify-around">
             <View className="items-center">
@@ -154,7 +198,18 @@ export default function BadgeCollectionScreen() {
           </View>
         </View>
 
-        {/* Unlocked Badges Section */}
+        {recommendedBadges.length > 0 && (
+          <View className="mb-6">
+            <View className="mb-3 flex-row items-center gap-2">
+              <Text className="text-lg font-bold text-primary">⭐</Text>
+              <Text className="text-lg font-bold text-foreground">
+                おすすめバッジ ({recommendedBadges.length})
+              </Text>
+            </View>
+            {recommendedBadges.map((rec) => renderRecommendedBadge(rec))}
+          </View>
+        )}
+
         {unlockedBadges.length > 0 && (
           <View className="mb-6">
             <View className="mb-3 flex-row items-center gap-2">
@@ -167,7 +222,6 @@ export default function BadgeCollectionScreen() {
           </View>
         )}
 
-        {/* Locked Badges Section */}
         {lockedBadges.length > 0 && (
           <View className="mb-6">
             <View className="mb-3 flex-row items-center gap-2">
@@ -180,7 +234,6 @@ export default function BadgeCollectionScreen() {
           </View>
         )}
 
-        {/* Tips Section */}
         <View className="mb-6 bg-surface rounded-lg p-4 border border-border">
           <Text className="text-lg font-bold text-foreground mb-3">
             💡 バッジについて
@@ -213,7 +266,6 @@ export default function BadgeCollectionScreen() {
           </View>
         </View>
 
-        {/* Back Button */}
         <View className="gap-3">
           <Pressable
             onPress={handleBack}
