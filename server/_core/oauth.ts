@@ -3,6 +3,7 @@ import type { Express, Request, Response } from "express";
 import { getUserByOpenId, upsertUser } from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { getGoogleOAuthToken, getGoogleUserInfo } from "./google-auth";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -72,8 +73,22 @@ export function registerOAuthRoutes(app: Express) {
     }
 
     try {
-      const tokenResponse = await sdk.exchangeCodeForToken(code, state);
-      const userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
+      let userInfo;
+      if (state.startsWith("google_")) {
+        const redirectUri = `${req.protocol}://${req.get("host")}/api/oauth/callback`;
+        const tokenResponse = await getGoogleOAuthToken(code, redirectUri);
+        const googleUser = await getGoogleUserInfo(tokenResponse.access_token);
+        userInfo = {
+          openId: `google_${googleUser.id}`,
+          name: googleUser.name,
+          email: googleUser.email,
+          platform: "google",
+        };
+      } else {
+        const tokenResponse = await sdk.exchangeCodeForToken(code, state);
+        userInfo = await sdk.getUserInfo(tokenResponse.accessToken);
+      }
+
       await syncUser(userInfo);
       const sessionToken = await sdk.createSessionToken(userInfo.openId!, {
         name: userInfo.name || "",

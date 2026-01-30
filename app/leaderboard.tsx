@@ -10,8 +10,6 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { ScreenContainer } from "@/components/screen-container";
 import {
-  getTopUsers,
-  getUserRankingData,
   getRankingTier,
   getTierColor,
   formatLastTestDate,
@@ -21,44 +19,29 @@ import {
 } from "../lib/ranking";
 import { addFriend, isFriend, removeFriend } from "../lib/friends";
 import { useColors } from "@/hooks/use-colors";
+import { trpc } from "@/lib/trpc";
 
 export default function LeaderboardScreen() {
   const router = useRouter();
   const colors = useColors();
-  const [rankings, setRankings] = useState<RankingEntry[]>([]);
-  const [currentUser, setCurrentUser] = useState<UserRankingData | null>(null);
+  const [rankings, setRankings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    loadRankings();
-  }, []);
+  const { data: cloudRankings, isLoading, refetch } = trpc.study.getRankings.useQuery();
 
-  const loadRankings = async () => {
-    setLoading(true);
-    const topUsers = await getTopUsers(10);
-    const user = await getUserRankingData();
-    
-    // Load friend status for each user
-    const friends = new Set<string>();
-    for (const entry of topUsers) {
-      const isFriendUser = await isFriend(entry.userId);
-      if (isFriendUser) {
-        friends.add(entry.userId);
-      }
+  useEffect(() => {
+    if (cloudRankings) {
+      setRankings(cloudRankings);
+      setLoading(false);
     }
-    
-    setRankings(topUsers);
-    setCurrentUser(user);
-    setFriendIds(friends);
-    setLoading(false);
-  };
+  }, [cloudRankings]);
 
   const handleRefresh = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    loadRankings();
+    refetch();
   };
 
   const handleFollowUser = async (user: RankingEntry) => {
@@ -113,8 +96,6 @@ export default function LeaderboardScreen() {
     );
   }
 
-  const currentUserRank = rankings.find((r) => r.userId === currentUser?.userId);
-
   return (
     <ScreenContainer className="p-4 bg-background">
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -133,60 +114,21 @@ export default function LeaderboardScreen() {
           </View>
         </View>
 
-        {/* Your Rank Card */}
-        {currentUserRank && (
-          <View className="mb-6 bg-gradient-to-br from-primary/20 to-blue-500/20 rounded-lg p-4 border border-primary/30">
-            <Text className="text-sm font-semibold text-primary mb-2">
-              あなたのランク
-            </Text>
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-3">
-                <View className="w-12 h-12 bg-primary rounded-full items-center justify-center">
-                  <Text className="text-white font-bold text-lg">
-                    {currentUserRank.rank}
-                  </Text>
-                </View>
-                <View>
-                  <Text className="font-bold text-foreground">
-                    {currentUserRank.userName}
-                  </Text>
-                  <Text className="text-xs text-muted">
-                    Lv. {currentUserRank.level}
-                  </Text>
-                </View>
-              </View>
-              <View className="items-end">
-                <Text className="text-2xl font-bold text-primary">
-                  {currentUserRank.averageScore}%
-                </Text>
-                <Text className="text-xs text-muted">
-                  {currentUserRank.totalTests}回
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
         {/* Leaderboard */}
         <View className="mb-6">
           <Text className="text-lg font-bold text-foreground mb-3">
-            トップ10
+            トッププレイヤー
           </Text>
 
-          {rankings.map((entry) => {
-            const tier = getRankingTier(calculateRankingScore(entry));
+          {rankings.map((entry, index) => {
+            const rank = index + 1;
+            const tier = rank === 1 ? "S" : rank <= 3 ? "A" : rank <= 10 ? "B" : "C";
             const tierColor = getTierColor(tier);
-            const isCurrentUser = entry.userId === currentUser?.userId;
-            const isFriend = friendIds.has(entry.userId);
 
             return (
               <View
-                key={entry.userId}
-                className={`mb-2 p-3 rounded-lg border ${
-                  isCurrentUser
-                    ? "bg-primary/10 border-primary"
-                    : "bg-surface border-border"
-                }`}
+                key={index}
+                className="mb-2 p-3 rounded-lg border bg-surface border-border"
               >
                 <View className="flex-row items-center gap-3">
                   {/* Rank */}
@@ -195,7 +137,7 @@ export default function LeaderboardScreen() {
                     style={{ backgroundColor: tierColor }}
                   >
                     <Text className="text-white font-bold text-sm">
-                      {entry.rank}
+                      {rank}
                     </Text>
                   </View>
 
@@ -203,7 +145,7 @@ export default function LeaderboardScreen() {
                   <View className="flex-1">
                     <View className="flex-row items-center gap-2 mb-1">
                       <Text className="font-bold text-foreground">
-                        {entry.userName}
+                        {entry.name || "匿名ユーザー"}
                       </Text>
                       <View className="px-2 py-1 bg-primary/20 rounded">
                         <Text className="text-xs font-bold text-primary">
@@ -213,62 +155,23 @@ export default function LeaderboardScreen() {
                     </View>
                     <View className="flex-row gap-3">
                       <Text className="text-xs text-muted">
-                        Lv. {entry.level}
+                        スコア: {entry.score}
                       </Text>
                       <Text className="text-xs text-muted">
-                        {entry.totalTests}回
-                      </Text>
-                      <Text className="text-xs text-muted">
-                        {formatLastTestDate(entry.lastTestDate)}
+                        {new Date(entry.updatedAt).toLocaleDateString()}
                       </Text>
                     </View>
                   </View>
-
-                  {/* Score */}
-                  <View className="items-end">
-                    <Text className="text-lg font-bold text-foreground">
-                      {entry.averageScore}%
-                    </Text>
-                    <Text className="text-xs text-muted">
-                      {entry.badges}個のバッジ
-                    </Text>
-                  </View>
                 </View>
-
-                {/* Progress bar */}
-                <View className="mt-2 h-1.5 bg-border rounded-full overflow-hidden">
-                  <View
-                    className="h-full bg-primary"
-                    style={{
-                      width: `${entry.averageScore}%`,
-                    }}
-                  />
-                </View>
-
-                {/* Action buttons */}
-                {!isCurrentUser && (
-                  <View className="mt-3 flex-row gap-2">
-                    <Pressable
-                      onPress={() => handleViewUserProfile(entry.userId)}
-                      className="flex-1 px-3 py-2 rounded bg-surface border border-border"
-                    >
-                      <Text className="text-center font-semibold text-sm text-foreground">
-                        プロフィール
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => handleFollowUser(entry)}
-                      className={isFriend ? "flex-1 px-3 py-2 rounded bg-primary" : "flex-1 px-3 py-2 rounded bg-surface border border-border"}
-                    >
-                      <Text className={isFriend ? "text-center font-semibold text-sm text-white" : "text-center font-semibold text-sm text-foreground"}>
-                        {isFriend ? "フォロー中" : "フォロー"}
-                      </Text>
-                    </Pressable>
-                  </View>
-                )}
               </View>
             );
           })}
+          
+          {rankings.length === 0 && (
+            <Text className="text-center text-muted my-10">
+              まだランキングデータがありません。テストを受けて最初のランクインを目指しましょう！
+            </Text>
+          )}
         </View>
 
         {/* Statistics */}

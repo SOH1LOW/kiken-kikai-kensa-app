@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { trpc } from "./trpc";
 
 export type BadgeType =
   | "first_test"
@@ -243,6 +244,26 @@ export async function updateProfileWithTestResult(
   updateTitle(profile);
 
   await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+  
+  // クラウド同期（tRPC経由）
+  try {
+    const trpcClient = (global as any).trpcClient;
+    if (trpcClient) {
+      await trpcClient.study.updateHistory.mutate({
+        totalTests: profile.totalTests,
+        averageScore: profile.averageScore,
+        highestScore: profile.averageScore, // 簡易的に平均を最高点として扱う
+        totalQuestionsAnswered: profile.totalQuestions,
+        correctAnswers: profile.totalCorrectAnswers,
+        experience: profile.experience,
+        level: profile.level,
+      });
+      console.log("[Gamification] Cloud sync successful");
+    }
+  } catch (error) {
+    console.warn("[Gamification] Cloud sync failed:", error);
+  }
+
   return profile;
 }
 
