@@ -1,15 +1,8 @@
 {
-  "version": 2,
-  "buildCommand": "pnpm build:vercel",
+  "buildCommand": "npx expo export --platform web --output-dir public",
   "outputDirectory": "public",
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/index.ts"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/$1"
-    }
-  ]
+  "framework": "other",
+  "env": {
+    "EXPO_NO_METRO_WORKSPACE_ROOT": "1"
+  }
 }
