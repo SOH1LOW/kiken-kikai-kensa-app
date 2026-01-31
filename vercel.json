@@ -1,5 +1,5 @@
 {
-  "buildCommand": "rm -rf public && cp -r dist-web public",
-  "outputDirectory": "public",
+  "buildCommand": "echo 'Build skipped - using pre-built dist-web'",
+  "outputDirectory": "dist-web",
   "framework": "other"
 }
