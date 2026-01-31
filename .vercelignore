@@ -43,3 +43,16 @@ Thumbs.db
 README.md
 design.md
 todo.md
+
+# Expo app source (not needed for web build)
+app/
+components/
+hooks/
+lib/
+shared/
+scripts/
+.expo/
+app.config.ts
+tsconfig.json
+tailwind.config.js
+theme.config.js
