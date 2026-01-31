@@ -1,8 +1,9 @@
 {
-  "buildCommand": "npx expo export --platform web --output-dir public",
+  "buildCommand": "EXPO_NO_METRO_WORKSPACE_ROOT=1 npx expo export --platform web --output-dir public",
   "outputDirectory": "public",
   "framework": "other",
   "env": {
-    "EXPO_NO_METRO_WORKSPACE_ROOT": "1"
+    "EXPO_NO_METRO_WORKSPACE_ROOT": "1",
+    "NODE_ENV": "production"
   }
 }
