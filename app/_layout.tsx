@@ -18,7 +18,6 @@ import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
-import { useRouter, useSegments } from "expo-router";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -64,33 +63,7 @@ export default function RootLayout() {
         },
       }),
   );
-  const [trpcClient] = useState(() => {
-    const client = createTRPCClient();
-    if (typeof global !== "undefined") {
-      (global as any).trpcClient = client;
-    }
-    return client;
-  });
-  
-  const segments = useSegments();
-  const router = useRouter();
-  const { data: user, isLoading } = trpc.auth.me.useQuery(undefined, {
-    retry: false,
-  });
-
-  useEffect(() => {
-    if (isLoading) return;
-
-    const inAuthGroup = segments[0] === "login";
-
-    if (!user && !inAuthGroup) {
-      // ログインしていない場合はログイン画面へ
-      router.replace("/login");
-    } else if (user && inAuthGroup) {
-      // ログイン済みでログイン画面にいる場合はトップへ
-      router.replace("/(tabs)");
-    }
-  }, [user, segments, isLoading]);
+  const [trpcClient] = useState(() => createTRPCClient());
 
   // Ensure minimum 8px padding for top and bottom on mobile
   const providerInitialMetrics = useMemo(() => {
@@ -114,7 +87,6 @@ export default function RootLayout() {
           {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="login" />
             <Stack.Screen name="oauth/callback" />
           </Stack>
           <StatusBar style="auto" />

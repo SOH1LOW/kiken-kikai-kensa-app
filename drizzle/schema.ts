@@ -25,35 +25,4 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-/**
- * 学習履歴テーブル
- */
-export const studyHistory = mysqlTable("study_history", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().references(() => users.id),
-  totalTests: int("totalTests").default(0).notNull(),
-  averageScore: int("averageScore").default(0).notNull(),
-  highestScore: int("highestScore").default(0).notNull(),
-  totalQuestionsAnswered: int("totalQuestionsAnswered").default(0).notNull(),
-  correctAnswers: int("correctAnswers").default(0).notNull(),
-  experience: int("experience").default(0).notNull(),
-  level: int("level").default(1).notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
-
-/**
- * ランキングテーブル
- */
-export const rankings = mysqlTable("rankings", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().unique().references(() => users.id),
-  score: int("score").notNull(),
-  rank: int("rank"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
-
-export type StudyHistory = typeof studyHistory.$inferSelect;
-export type InsertStudyHistory = typeof studyHistory.$inferInsert;
-export type Ranking = typeof rankings.$inferSelect;
-export type InsertRanking = typeof rankings.$inferInsert;
-
+// TODO: Add your tables here
