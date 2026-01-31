@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm build:vercel",
+  "buildCommand": "rm -rf public && cp -r dist-web public",
   "outputDirectory": "public",
   "framework": "other"
 }
